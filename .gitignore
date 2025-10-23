@@ -1,3 +1,4 @@
 .env
 .venv
-bruno
+/frontend/vite-project/node_modules
+/bruno
