@@ -93,6 +93,7 @@ def is_authenticated(request):
     return Response({'authenticated': True})
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def register(request):
     serializer = UserRegistrationSerializer(data=request.data) # pass body of request to serializer
     if serializer.is_valid():
