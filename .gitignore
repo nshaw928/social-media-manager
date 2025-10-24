@@ -1,4 +1,4 @@
-.env
+/backend/djangoproject/.env
 .venv
 /frontend/vite-project/node_modules
 /bruno

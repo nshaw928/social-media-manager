@@ -1,4 +1,10 @@
 from django.shortcuts import render
+from django.core.mail import send_mail
+from django.contrib.sites.shortcuts import get_current_site
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
+
 from django.contrib.auth.models import User
 from .models import Note
 from .serializer import NoteSerializer, UserRegistrationSerializer
@@ -100,7 +106,52 @@ def register(request):
         serializer.save()
         return Response(serializer.data)
     else:
-        return Response(serializer.error)
+        return Response(serializer.errors)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def send_verification_email(request):
+    email = request.data.get('email')
+    if not email:
+        return Response({'message': 'Email is required'}, status=400)
+    
+    try:
+        user = User.objects.get(email=email)
+        current_site = get_current_site(request)
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        
+        # Construct verification URL
+        verification_url = f"{request.build_absolute_uri('/verify-email/')}{uid}/{token}/"
+        
+        # Send email (configure your email settings)
+        send_mail(
+            'Verify your email',
+            f'Click the link to verify your email: {verification_url}',
+            'from@example.com',
+            [email],
+            fail_silently=False,
+        )
+        
+        return Response({'message': 'Verification email sent'}, status=200)
+    except User.DoesNotExist:
+        return Response({'message': 'User not found'}, status=404)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def verify_email_token(request, uidb64, token):
+    try:
+        uid = force_bytes(urlsafe_base64_decode(uidb64)).decode()
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.save()
+        return Response({'message': 'Email verified successfully'}, status=200)
+    else:
+        return Response({'message': 'Invalid verification link'}, status=400)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
