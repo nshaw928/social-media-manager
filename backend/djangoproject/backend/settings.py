@@ -12,13 +12,14 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables from .env file (use python-dotenv)
-from dotenv import load_dotenv
 load_dotenv()
+print("Loaded ENV:", os.environ)
 
 
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
